@@ -18,8 +18,8 @@ import org.springframework.data.redis.serializer.StringRedisSerializer
 @Configuration
 class RedisConfiguration {
 
-//    @Autowired
-//    lateinit var objectMapper: ObjectMapper
+    @Autowired
+    lateinit var objectMapper: ObjectMapper
 
 
     @Value("\${spring.data.redis.host}")
@@ -44,12 +44,23 @@ class RedisConfiguration {
     }
 
     @Bean
-    fun redisTemplate(): RedisTemplate<String, String> {
-        val template = RedisTemplate<String, String>()
-        template.setDefaultSerializer(StringRedisSerializer())
+    fun redisTemplate(): RedisTemplate<String, Any> {
+        val template = RedisTemplate<String, Any>()
+        template.setDefaultSerializer(GenericJackson2JsonRedisSerializer(getRedisObjectMapper()))
         template.connectionFactory = jedisConnectionFactory()
-
         return template
+    }
+
+    private fun getRedisObjectMapper(): ObjectMapper {
+        val objectMapper = objectMapper.copy()
+        var defaultTypeResolver: StdTypeResolverBuilder = ObjectMapper.DefaultTypeResolverBuilder(
+            ObjectMapper.DefaultTyping.EVERYTHING,
+            objectMapper.polymorphicTypeValidator
+        )
+        defaultTypeResolver = defaultTypeResolver.init(JsonTypeInfo.Id.CLASS, null)
+        defaultTypeResolver = defaultTypeResolver.inclusion(JsonTypeInfo.As.PROPERTY)
+        objectMapper.setDefaultTyping(defaultTypeResolver)
+        return objectMapper
     }
 
 

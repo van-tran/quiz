@@ -17,22 +17,14 @@ class KafkaConsumer(val quizService: QuizService) {
 
     // Initializing instance of Logger for Service
     val logger: Logger = LoggerFactory.getLogger(KafkaConsumer::class.java)
-    //
-//    var latch = CountDownLatch(1)
-//    lateinit var payload: QuizSubmission
 
-    @KafkaListener(topics = ["quiz_submission"],
-        groupId = "quiz_service_group_A",
+    @KafkaListener(topics = ["\${kafka.topic.quiz_submission}"],
+        groupId = "\${kafka.group.quiz_service_group}",
         containerFactory = "kafkaListenerContainerFactory")
     fun consume(@Payload event: Event) {
         logger.info("Consumed message: $event")
         quizService.handleQuizAnswer(answer = event.payload)
-//        payload = event.payload
-//        latch.countDown()
     }
-//    fun resetLatch() {
-//        latch = CountDownLatch(1)
-//    }
 
 
 }

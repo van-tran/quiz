@@ -11,10 +11,10 @@ import org.springframework.stereotype.Service
 
 @Loggable
 @Service
-class QuizServiceImpl(val redisTemplate: RedisTemplate<String, String>,
+class QuizServiceImpl(val redisTemplate: RedisTemplate<String, Any>,
                       val kafkaProducer: KafkaProducer) : QuizService {
 
-    val opsForZSet: ZSetOperations<String, String> by lazy {
+    val opsForZSet: ZSetOperations<String, Any> by lazy {
         redisTemplate.opsForZSet()
     }
 
