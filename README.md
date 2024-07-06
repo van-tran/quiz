@@ -12,13 +12,14 @@ The Vocabulary Quiz Scoring Service is a Spring Boot application designed to pro
 - Kotlin
 - Spring Boot
 - Gradle
+- MongoDB
 - Kafka : Middleware for communicating between services
 - Redis : In-memory data store that's used for storing quiz scores & leaderboard
 
 ## Getting Started
 
 ### Prerequisites
-- JDK 11 or later
+- JDK 17
 - Docker and Docker Compose
 - Gradle
 
@@ -27,6 +28,9 @@ The Vocabulary Quiz Scoring Service is a Spring Boot application designed to pro
 2. `./gradlew test`
 
 ### Running the Application
-1. Environment variables in .env file
-2. Start docker-compose to run Kafka, MongoDB and Redis
-3. Run the application
+
+* Project has default configuration within .env file
+* After init gradle,
+* Build Jar file :  `./gradlew bootJar`
+* Then, run following command to deploy docker containers :
+  `docker compose up --build -d`

@@ -14,11 +14,8 @@ import org.springframework.stereotype.Service
 class QuizServiceImpl(val redisTemplate: RedisTemplate<String, String>,
                       val kafkaProducer: KafkaProducer) : QuizService {
 
-    private lateinit var opsForZSet: ZSetOperations<String, String>
-
-    @PostConstruct
-    fun init() {
-        this.opsForZSet = redisTemplate.opsForZSet()
+    val opsForZSet: ZSetOperations<String, String> by lazy {
+        redisTemplate.opsForZSet()
     }
 
     override fun handleQuizAnswer(quizSubmission: QuizSubmission) {

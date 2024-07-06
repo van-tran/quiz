@@ -52,12 +52,17 @@ services:
     image: redis:7.2-alpine
     restart: always
     ports:
-      - '6379:6379'
+      - 6379:6379
     command: redis-server --save 20 1 --loglevel warning --requirepass ${SPRING_REDIS_PASS}
     volumes:
       - cache:/data
     networks:
       - spring-cloud-network
+    healthcheck:
+      test: [ "CMD-SHELL", "redis-cli ping" ]
+      interval: 10s
+      timeout: 10s
+      retries: 3
   app:
     container_name: quiz-service
     build:
