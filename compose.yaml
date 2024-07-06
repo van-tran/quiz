@@ -1,38 +1,63 @@
 services:
   zookeeper:
-    image: 'bitnami/zookeeper:latest'
-    ports:
-      - '2181:2181'
+    image: confluentinc/cp-zookeeper:latest
     environment:
-      - 'ALLOW_ANONYMOUS_LOGIN=yes'
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - 22181:2181
+    networks:
+      - spring-cloud-network
 
   kafka:
-    image: 'bitnami/kafka:latest'
-    ports:
-      - '9092:9092'
-    environment:
-      - 'KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181'
-      - 'KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9092'
-      - 'ALLOW_PLAINTEXT_LISTENER=yes'
+    image: confluentinc/cp-kafka:latest
     depends_on:
       - zookeeper
+    ports:
+      - 29092:29092
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    networks:
+      - spring-cloud-network
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    depends_on:
+      - kafka
+    ports:
+      - 8090:8080
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+    networks:
+      - spring-cloud-network
   mongodb:
     image: 'mongo:latest'
     environment:
-      - 'MONGO_INITDB_DATABASE=mydatabase'
-      - 'MONGO_INITDB_ROOT_PASSWORD=secret'
-      - 'MONGO_INITDB_ROOT_USERNAME=root'
+      - MONGO_INITDB_DATABASE=${MONGO_INITDB_DATABASE}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
     ports:
-      - '27017'
+      - '27017:27017'
+    networks:
+      - spring-cloud-network
   redis:
     container_name: redis
     image: redis:7.2-alpine
     restart: always
     ports:
       - '6379:6379'
-    command: redis-server --save 20 1 --loglevel warning --requirepass ${REDIS_PASS}
+    command: redis-server --save 20 1 --loglevel warning --requirepass ${SPRING_REDIS_PASS}
     volumes:
       - cache:/data
+    networks:
+      - spring-cloud-network
   app:
     container_name: quiz-service
     build:
@@ -43,9 +68,13 @@ services:
       - ${APP_PORT}:8080
     networks:
       - spring-cloud-network
-  volumes:
-    cache:
-      driver: local
-  networks:
-    spring-cloud-network:
-      driver: bridge
+    depends_on:
+      - kafka
+      - mongodb
+      - redis
+volumes:
+  cache:
+    driver: local
+networks:
+  spring-cloud-network:
+    driver: bridge

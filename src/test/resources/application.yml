@@ -1,0 +1,22 @@
+spring:
+  main:
+    allow-bean-definition-overriding: true
+#  kafka:
+#    consumer:
+#      auto-offset-reset: earliest
+#      group-id: quiz_service_group
+#test:
+#  topic: quiz_submission
+
+#kafka:
+#  config:
+#    bootstrap-server: localhost:9093
+#    max-block-ms: 5000
+#    max-request-size: 10485880
+#    retry: 3
+#    buffer-memory: 10485880
+#    batch-size: 100000
+#    linger-ms: 10
+#    metadata-max-age: 500
+#    acks: 1
+#    security-protocol: PLAINTEXT

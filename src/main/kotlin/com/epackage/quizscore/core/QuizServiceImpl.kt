@@ -1,25 +1,35 @@
 package com.epackage.quizscore.core
 
+import com.epackage.quizscore.core.dto.Event
+import com.epackage.quizscore.core.dto.QuizSubmission
+import com.epackage.quizscore.externals.kafka.KafkaProducer
+import com.epackage.quizscore.logging.Loggable
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.stereotype.Service
 
-
+@Loggable
 @Service
-class QuizServiceImpl(val redisTemplate: RedisTemplate<String, String>) : QuizService {
+class QuizServiceImpl(val redisTemplate: RedisTemplate<String, String>,
+                      val kafkaProducer: KafkaProducer) : QuizService {
 
-    override fun handleQuizAnswer(answer: String) {
-        val score = scoreQuizAnswer(answer)
-        saveScoreToRedis(answer, score)
+    override fun handleQuizAnswer(quizSubmission: QuizSubmission) {
+        val score = scoreQuizAnswer(quizSubmission)
+        saveScoreToRedis(quizSubmission, score)
     }
-    fun scoreQuizAnswer(answer: String): Int {
+    fun scoreQuizAnswer(quizSubmission: QuizSubmission): Int {
         // Implement your scoring logic here
         // This is a placeholder for simplicity
-        return answer.length // Example scoring logic
+        return quizSubmission.answer.length // Example scoring logic
     }
 
-    fun saveScoreToRedis(answer: String, score: Int) {
-        // Use the answer as the key and score as the value for simplicity
-        redisTemplate.opsForValue().set("QuizScore:$answer", score.toString())
-        println("Score saved to Redis: $score for answer $answer")
+    fun saveScoreToRedis(quizSubmission: QuizSubmission, score: Int) {
+        val scoreBoardKey = "QuizScores" // Redis key for the sorted set
+        val userId = quizSubmission.userID
+        // Use the userId as the member and score as the score for the sorted set
+        redisTemplate.opsForZSet().add(scoreBoardKey, userId, score.toDouble())
+        println("Score saved to Redis: $score for userId $userId")
+
+        quizSubmission.score = score
+        kafkaProducer.sendUpdateScore(Event(quizSubmission))
     }
 }
