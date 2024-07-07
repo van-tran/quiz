@@ -13,51 +13,52 @@ import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.data.redis.core.StringRedisTemplate
 import org.springframework.data.redis.core.ValueOperations
 import org.springframework.data.redis.core.ZSetOperations
+import org.mockito.kotlin.whenever
 
 class QuizServiceImplTest {
 
-    private lateinit var redisTemplate: StringRedisTemplate
+    private lateinit var redisTemplate: RedisTemplate<String, Any>
     private lateinit var kafkaProducer: KafkaProducer
-    private lateinit var valueOperations: ZSetOperations<String, String>
+    private lateinit var zSetOperations: ZSetOperations<String, Any>
     private lateinit var quizService: QuizServiceImpl
 
     @BeforeEach
     fun setUp() {
         redisTemplate = mock()
-        valueOperations = mock()
         kafkaProducer = mock()
-        Mockito.`when`(redisTemplate.opsForZSet()).thenReturn(valueOperations)
-        quizService = QuizServiceImpl(redisTemplate,kafkaProducer)
+        zSetOperations = mock()
+        whenever(redisTemplate.opsForZSet()).thenReturn(zSetOperations)
+        quizService = QuizServiceImpl(redisTemplate, kafkaProducer)
     }
 
     @Test
-    fun `handleQuizAnswer should score and save to Redis`() {
-        val answer = "testAnswer"
-        val expectedScore = answer.length
+    fun `handleQuizAnswer should score and save to Redis and send Kafka message`() {
+        val quizSubmission = QuizSubmission("quizID", "userID", "testAnswer")
+        val expectedScore = quizSubmission.answer.length
 
-        quizService.handleQuizAnswer(QuizSubmission("quizID", "userID", answer))
+        quizService.handleQuizAnswer(quizSubmission)
 
-        verify(redisTemplate).opsForValue()
-        verify(valueOperations).add("QuizScores","QuizScore:$answer", expectedScore.toDouble())
+        verify(zSetOperations).add("QuizScores", quizSubmission.userID, expectedScore.toDouble())
+        verify(kafkaProducer).sendUpdateScore(Event(quizSubmission.copy(score = expectedScore)))
     }
 
     @Test
     fun `scoreQuizAnswer returns correct score based on answer length`() {
-        val answer = "test"
+        val quizSubmission = QuizSubmission("quizID", "userID", "test")
         val expectedScore = 4 // Length of "test"
 
-        val score = quizService.scoreQuizAnswer(QuizSubmission("quizID", "userID", answer))
+        val score = quizService.scoreQuizAnswer(quizSubmission)
 
         assert(score == expectedScore)
     }
 
     @Test
-    fun `saveScoreToRedis saves score with correct key`() {
-        val answer = "answer"
+    fun `saveScoreToRedis saves score with correct key and value`() {
+        val quizSubmission = QuizSubmission("quizID", "userID", "answer")
         val score = 42
 
-        quizService.saveScoreToRedis(QuizSubmission("quizID", "userID", answer), score)
+        quizService.saveScoreToRedis(quizSubmission, score)
 
-        verify(valueOperations).add("QuizScores","QuizScore:$answer", score.toDouble())
+        verify(zSetOperations).add("QuizScores", quizSubmission.userID, score.toDouble())
     }
 }

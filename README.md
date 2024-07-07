@@ -37,8 +37,9 @@ The Vocabulary Quiz Scoring Service is a Spring Boot application designed to pro
 
 ### Current issue & Suggestion
 1. [Problem] Connect Local Redis Container
-2. [Improvement] Use monitoring tools to check the performance of the application (Prometheus, ELK, Datadog,..)
+2. [Test] Need more loading tests
 3. [Improvement] Apply coroutine & webflux to make async processing
 4. [Improvement] Implement a circuit breaker pattern to prevent cascading failures
 5. [Improvement] Implement a rate limiter to prevent abuse of the service
 6. [Improvement] Implement a retry mechanism to handle transient failures
+7. [Improvement] Use monitoring tools to check the performance of the application (Prometheus, ELK, Datadog,..)
